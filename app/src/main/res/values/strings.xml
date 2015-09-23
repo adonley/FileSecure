@@ -5,4 +5,7 @@
 
     <string name="pref_store_password_summary">Stores the password in memory until the app is closed or the user manually evicts the key.</string>
     <string name="pref_store_password_title">Store Password in Memory</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
