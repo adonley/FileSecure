@@ -1,7 +1,6 @@
 package network.bitmesh.filesecure.Fragments;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,10 +19,11 @@ import android.widget.TableRow;
 import android.widget.TextView;
 
 import java.io.File;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import network.bitmesh.filesecure.R;
+import network.bitmesh.filesecure.Utilities.IconHelper;
 
 public class FileViewerFragment extends Fragment {
 
@@ -82,17 +82,24 @@ public class FileViewerFragment extends Fragment {
 
     protected void updateFileView(@NonNull String path)
     {
-        currentDirectory.setText(path);
+        Log.i(TAG, "Current path - " + path);
         tableLayout.removeAllViews();
+        currentLocation = path;
 
-        // Probably not the best way to calculate image size
-        Display display = getActivity().getWindowManager().getDefaultDisplay();
-        int reqWidth = display.getWidth() / 3;
-        Log.i(TAG,"reqWidth: " + reqWidth);
+        File[] filesArray = readFilesFromDirectory(path);
+        ArrayList<File> files = new ArrayList<>();
+        File currentDir = new File(currentLocation);
+        currentDirectory.setText(currentDir.getAbsolutePath());
 
-        File[] files = readFilesFromDirectory(path);
+        Log.i(TAG, "AbsolutePath - " + currentDir.getAbsolutePath());
 
-        for(int i = 0; i < files.length; i=i+3)
+        // TODO: Generalize the external write dir name
+        if(currentDir.isDirectory() && currentDir.getAbsolutePath() != "/sdcard")
+            files.add(new File(currentDir.getParent()));
+
+        files.addAll(Arrays.asList(filesArray));
+
+        for(int i = 0; i < files.size(); i=i+3)
         {
             TableRow row = new TableRow(this.getContext());
             LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -110,61 +117,31 @@ public class FileViewerFragment extends Fragment {
             TextView fileName1 = (TextView) inflated.findViewById(R.id.fileNameView1);
             TextView fileName2 = (TextView) inflated.findViewById(R.id.fileNameView2);
 
-            fileName0.setText(files[i].getName());
-            fileIcon0.setImageBitmap(decodeSampledBitmapFromResource(getResources(), R.mipmap.apk, 100));
-            col1.setOnClickListener(new OnFileClickListener(files[i]));
+            // Special case for the parent directory
+            if(i == 0 && currentLocation != "/sdcard")
+                fileName0.setText("..");
+            else
+                fileName0.setText(files.get(i).getName());
 
-            if((i+1) < files.length)
+            fileIcon0.setImageBitmap(IconHelper.decodeSampledBitmapFromResource(getResources(), files.get(i), 100));
+            col1.setOnClickListener(new OnFileClickListener(files.get(i)));
+
+            if((i+1) < files.size())
             {
-                fileName1.setText(files[i + 1].getName());
-                fileIcon1.setImageBitmap(decodeSampledBitmapFromResource(getResources(), R.mipmap.apk, 100));
-                col2.setOnClickListener(new OnFileClickListener(files[i + 1]));
+                fileName1.setText(files.get(i + 1).getName());
+                fileIcon1.setImageBitmap(IconHelper.decodeSampledBitmapFromResource(getResources(), files.get(i+1), 100));
+                col2.setOnClickListener(new OnFileClickListener(files.get(i + 1)));
             }
 
-            if((i+2) < files.length)
+            if((i+2) < files.size())
             {
-                fileName2.setText(files[i+2].getName());
-                fileIcon2.setImageBitmap(decodeSampledBitmapFromResource(getResources(), R.mipmap.apk, 100));
-                col3.setOnClickListener(new OnFileClickListener(files[i + 2]));
+                fileName2.setText(files.get(i+2).getName());
+                fileIcon2.setImageBitmap(IconHelper.decodeSampledBitmapFromResource(getResources(), files.get(i+2), 100));
+                col3.setOnClickListener(new OnFileClickListener(files.get(i + 2)));
             }
 
             tableLayout.addView(row);
         }
-    }
-
-    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth) {
-        final int width = options.outWidth;
-
-        int inSampleSize = 1;
-
-        if (width > reqWidth) {
-
-            final int halfWidth = width / 2;
-
-            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-            // height and width larger than the requested height and width.
-            while ((halfWidth / inSampleSize) > reqWidth) {
-                inSampleSize *= 2;
-            }
-        }
-
-        return inSampleSize;
-    }
-
-    private static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
-                                                         int reqWidth) {
-
-        // First decode with inJustDecodeBounds=true to check dimensions
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeResource(res, resId, options);
-
-        // Calculate inSampleSize
-        options.inSampleSize = calculateInSampleSize(options, reqWidth);
-
-        // Decode bitmap with inSampleSize set
-        options.inJustDecodeBounds = false;
-        return BitmapFactory.decodeResource(res, resId, options);
     }
 
     protected class OnFileClickListener implements View.OnClickListener
