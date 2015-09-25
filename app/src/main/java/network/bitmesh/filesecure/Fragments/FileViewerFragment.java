@@ -1,14 +1,14 @@
 package network.bitmesh.filesecure.Fragments;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import network.bitmesh.filesecure.Activities.FileViewer;
 import network.bitmesh.filesecure.R;
 import network.bitmesh.filesecure.Utilities.IconHelper;
 
@@ -31,9 +32,10 @@ public class FileViewerFragment extends Fragment {
     private static final String TAG = "FileViewerFragment";
 
     /** Set the default location to sdcard unless otherwise specified in parameters */
-    private String currentLocation = "/sdcard";
-    private TableLayout tableLayout;
-    private TextView currentDirectory;
+    protected String currentLocation = "/sdcard";
+    protected TableLayout tableLayout;
+    protected TextView currentDirectory;
+    protected BroadcastReceiver backButtonReceiver;
 
     public FileViewerFragment() { }
 
@@ -43,6 +45,9 @@ public class FileViewerFragment extends Fragment {
         if (getArguments() != null) {
             currentLocation = getArguments().getString(LOCATION_PARAM);
         }
+        backButtonReceiver = new BackButtonReciever();
+        LocalBroadcastManager.getInstance(getActivity())
+                .registerReceiver(backButtonReceiver, new IntentFilter(FileViewer.BACK_BUTTON_INTENT));
     }
 
     @Override
@@ -53,6 +58,12 @@ public class FileViewerFragment extends Fragment {
         currentDirectory = (TextView) root.findViewById(R.id.current_location_view);
         updateFileView(currentLocation);
         return root;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(backButtonReceiver);
     }
 
     public static FileViewerFragment newInstance() {
@@ -160,5 +171,17 @@ public class FileViewerFragment extends Fragment {
                 updateFileView(file.getAbsolutePath());
         }
     }
+
+    protected class BackButtonReciever extends BroadcastReceiver
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            Log.d("receiver", "Back button pressed");
+            // TODO: if path != whatever
+            File file = new File(currentLocation);
+            updateFileView(new File(currentLocation).getParent());
+        }
+    };
 
 }
